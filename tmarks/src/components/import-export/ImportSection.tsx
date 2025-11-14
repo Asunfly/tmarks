@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom'
 import { DragDropUpload } from '../common/DragDropUpload'
 import { ProgressIndicator } from '../common/ProgressIndicator'
 import { ErrorDisplay } from '../common/ErrorDisplay'
+import { useAuthStore } from '@/stores/authStore'
 import type {
   ImportFormat,
   ImportOptions,
@@ -135,10 +136,14 @@ export function ImportSection({ onImport }: ImportSectionProps) {
 
     try {
       const content = await selectedFile.text()
-      
+
+      const token = useAuthStore.getState().accessToken
       const response = await fetch('/api/v1/import', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           format: selectedFormat,
           content,
@@ -148,7 +153,7 @@ export function ImportSection({ onImport }: ImportSectionProps) {
 
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(error.message || '导入失败')
+        throw new Error(error.message || 'Import failed')
       }
 
       const result: ImportResult = await response.json()

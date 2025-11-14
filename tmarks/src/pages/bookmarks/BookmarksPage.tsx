@@ -131,6 +131,7 @@ export function BookmarksPage() {
   const [viewMode, setViewMode] = useState<ViewMode>(() => getStoredViewMode() ?? 'card')
   const [visibilityFilter, setVisibilityFilter] = useState<VisibilityFilter>('all')
   const [tagLayout, setTagLayout] = useState<'grid' | 'masonry'>('grid')
+  const [sortByInitialized, setSortByInitialized] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null)
   const [batchMode, setBatchMode] = useState(false)
@@ -188,7 +189,7 @@ export function BookmarksPage() {
     return () => clearTimeout(timer)
   }, [searchKeyword])
 
-  // 初始化视图模式
+  // 初始化视图模式和排序方式
   useEffect(() => {
     if (preferences?.view_mode && isValidViewMode(preferences.view_mode)) {
       const storedMode = getStoredViewMode()
@@ -204,7 +205,13 @@ export function BookmarksPage() {
     if (preferences?.tag_layout) {
       setTagLayout(preferences.tag_layout)
     }
-  }, [preferences])
+
+    // 从数据库加载排序方式
+    if (preferences?.sort_by && !sortByInitialized) {
+      setSortBy(preferences.sort_by)
+      setSortByInitialized(true)
+    }
+  }, [preferences, sortByInitialized])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -443,6 +450,12 @@ export function BookmarksPage() {
     updatePreferences.mutate({ tag_layout: layout })
   }
 
+  const handleSortByChange = (sort: SortOption) => {
+    setSortBy(sort)
+    // 保存到用户偏好设置
+    updatePreferences.mutate({ sort_by: sort })
+  }
+
   const handleToggleSelect = (bookmarkId: string) => {
     setSelectedIds((prev) =>
       prev.includes(bookmarkId)
@@ -611,7 +624,7 @@ export function BookmarksPage() {
                 <div className="relative flex-1 sm:flex-initial">
                   <SortSelector
                     value={sortBy}
-                    onChange={setSortBy}
+                    onChange={handleSortByChange}
                     className="w-full sm:w-auto"
                   />
                 </div>
